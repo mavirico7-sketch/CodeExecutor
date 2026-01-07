@@ -47,10 +47,11 @@ def execute_code(
     self,
     session_id: str,
     code: str,
-    filename: str = None
+    filename: str = None,
+    stdin_data: str = None
 ) -> Dict[str, Any]:
     """
-    Execute code in the session's container
+    Execute code in the session's container with optional stdin input
     """
     try:
         # Get session info
@@ -88,7 +89,8 @@ def execute_code(
             container_id=container_id,
             code=code,
             environment=environment,
-            filename=filename
+            filename=filename,
+            stdin_data=stdin_data
         )
 
         # Save result and update status

@@ -29,6 +29,10 @@ class CreateSessionResponse(BaseModel):
 
 class ExecuteCodeRequest(BaseModel):
     code: str = Field(..., description="Source code to execute")
+    stdin: Optional[str] = Field(
+        None,
+        description="Input data to pass to the program via stdin"
+    )
     filename: Optional[str] = Field(
         None,
         description="Optional filename for the code (e.g., 'main.py')"

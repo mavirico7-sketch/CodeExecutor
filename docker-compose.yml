@@ -73,8 +73,8 @@ services:
     container_name: code-executor-api
     # API доступен напрямую на порту 8000 или через Nginx Proxy Manager
     # Для production рекомендуется убрать прямой доступ и использовать только NPM
-    ports:
-      - "8000:8000"
+    #ports:
+    #  - "8000:8000"
     env_file:
       - ./code-executor.conf
     networks:

@@ -142,7 +142,7 @@ async def execute_code_endpoint(session_id: str, request: ExecuteCodeRequest):
         # Execute code synchronously (wait for result)
         result = celery_app.send_task(
             "app.worker.tasks.execute_code",
-            args=[session_id, request.code, request.filename]
+            args=[session_id, request.code, request.filename, request.stdin]
         ).get(timeout=settings.execution_timeout + 10)
 
         if not result.get("success", False):

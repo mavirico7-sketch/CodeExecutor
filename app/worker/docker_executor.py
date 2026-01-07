@@ -91,9 +91,10 @@ class DockerExecutor:
         container_id: str,
         code: str,
         environment: str,
-        filename: Optional[str] = None
+        filename: Optional[str] = None,
+        stdin_data: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Execute code in the container."""
+        """Execute code in the container with optional stdin input."""
         if filename is None:
             filename = self.get_default_filename(environment)
 
@@ -120,11 +121,35 @@ class DockerExecutor:
 
             # Execute code with timeout
             start_time = time.time()
-            exec_result = container.exec_run(
-                cmd=["timeout", str(settings.execution_timeout)] + run_cmd,
-                demux=True,
-                user=settings.executor_user
-            )
+            
+            if stdin_data:
+                # Write stdin data to a temporary file
+                stdin_file = f"{settings.workspace_dir}/.stdin"
+                stdin_write = container.exec_run(
+                    cmd=["sh", "-c", f"cat > {stdin_file}"],
+                    stdin=True,
+                    socket=True,
+                    user=settings.executor_user
+                )
+                stdin_sock = stdin_write.output
+                stdin_sock._sock.sendall(stdin_data.encode("utf-8"))
+                stdin_sock._sock.close()
+                time.sleep(0.05)
+                
+                # Execute with stdin from file
+                run_cmd_str = " ".join(run_cmd)
+                exec_result = container.exec_run(
+                    cmd=["sh", "-c", f"timeout {settings.execution_timeout} sh -c '{run_cmd_str} < {stdin_file}'"],
+                    demux=True,
+                    user=settings.executor_user
+                )
+            else:
+                exec_result = container.exec_run(
+                    cmd=["timeout", str(settings.execution_timeout)] + run_cmd,
+                    demux=True,
+                    user=settings.executor_user
+                )
+            
             execution_time = time.time() - start_time
 
             stdout = exec_result.output[0] or b""
