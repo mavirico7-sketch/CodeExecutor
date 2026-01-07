@@ -1,0 +1,104 @@
+# =============================================================================
+# Code Executor - Environments Configuration
+# =============================================================================
+# This file defines all available execution environments.
+# Each environment specifies: image, default filename, and run commands.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Environment Definitions
+# -----------------------------------------------------------------------------
+# Structure:
+#   <env_name>:
+#     image: Docker image name (will be prefixed with docker.image_prefix from config.yaml)
+#     default_filename: Default filename for code files
+#     file_extension: File extension for the language
+#     run_command: Command template to execute code
+#                  Placeholders: {file_path}, {filename}, {output_path}
+#     compile_command: (optional) Command to compile before running
+#     description: Human-readable description
+# -----------------------------------------------------------------------------
+
+environments:
+  # ---------------------------------------------------------------------------
+  # Python Environments
+  # ---------------------------------------------------------------------------
+  python:
+    image: python
+    default_filename: main.py
+    file_extension: .py
+    run_command: python {file_path}
+    description: Python 3.11 with basic packages (requests, pytest)
+    enabled: true
+
+  python-ml:
+    image: python-ml
+    default_filename: main.py
+    file_extension: .py
+    run_command: python {file_path}
+    description: Python 3.11 with ML packages (numpy, pandas, scikit-learn)
+    enabled: true
+
+  # ---------------------------------------------------------------------------
+  # JavaScript/Node.js Environments
+  # ---------------------------------------------------------------------------
+  node:
+    image: node
+    default_filename: main.js
+    file_extension: .js
+    run_command: node {file_path}
+    description: Node.js 20 LTS
+    enabled: true
+
+  # ---------------------------------------------------------------------------
+  # Compiled Languages
+  # ---------------------------------------------------------------------------
+  rust:
+    image: rust
+    default_filename: main.rs
+    file_extension: .rs
+    # For compiled languages, use shell to chain compile and run
+    run_command: sh -c "rustc {file_path} -o {output_path} && {output_path}"
+    description: Rust 1.75
+    enabled: true
+
+  # ---------------------------------------------------------------------------
+  # Additional Environments (disabled by default - add Dockerfiles to enable)
+  # ---------------------------------------------------------------------------
+  # go:
+  #   image: go
+  #   default_filename: main.go
+  #   file_extension: .go
+  #   run_command: sh -c "go build -o {output_path} {file_path} && {output_path}"
+  #   description: Go 1.21
+  #   enabled: false
+
+  # cpp:
+  #   image: cpp
+  #   default_filename: main.cpp
+  #   file_extension: .cpp
+  #   run_command: sh -c "g++ {file_path} -o {output_path} && {output_path}"
+  #   description: C++ with GCC 13
+  #   enabled: false
+
+  # java:
+  #   image: java
+  #   default_filename: Main.java
+  #   file_extension: .java
+  #   run_command: sh -c "javac {file_path} && java -cp /workspace Main"
+  #   description: Java 21
+  #   enabled: false
+
+# -----------------------------------------------------------------------------
+# Default Settings
+# -----------------------------------------------------------------------------
+defaults:
+  # Default environment if not specified
+  default_environment: python
+  
+  # Workspace directory inside container
+  workspace_dir: /workspace
+  
+  # User to run code as
+  executor_user: executor
+
