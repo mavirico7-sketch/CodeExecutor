@@ -9,6 +9,8 @@
 #   - API: http://localhost:8000 (direct) or via Nginx Proxy Manager
 #   - Nginx Proxy Manager Admin: http://localhost:81
 #     Default login: admin@example.com / changeme
+#
+# Network: all services are connected to 'app-network'
 # =============================================================================
 
 services:
@@ -28,6 +30,8 @@ services:
     volumes:
       - npm_data:/data
       - npm_letsencrypt:/etc/letsencrypt
+    networks:
+      - app-network
     depends_on:
       - api
     restart: unless-stopped
@@ -49,6 +53,8 @@ services:
     #   - "6379:6379"
     volumes:
       - redis_data:/data
+    networks:
+      - app-network
     command: redis-server --appendonly yes
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -71,6 +77,8 @@ services:
       - "8000:8000"
     env_file:
       - ./code-executor.conf
+    networks:
+      - app-network
     depends_on:
       redis:
         condition: service_healthy
@@ -94,13 +102,15 @@ services:
       - ./code-executor.conf
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - app-network
     depends_on:
       redis:
         condition: service_healthy
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
-  # Celery Beat - Scheduler for periodic tasks
+  # Celery Beat - Scheduler for periodic tasks (планировщик, не слушает порты)
   # ---------------------------------------------------------------------------
   beat:
     build:
@@ -110,11 +120,24 @@ services:
     command: celery -A app.worker.celery_app beat --loglevel=info
     env_file:
       - ./code-executor.conf
+    networks:
+      - app-network
     depends_on:
       redis:
         condition: service_healthy
     restart: unless-stopped
 
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  app-network:
+    name: app-network
+    driver: bridge
+
+# =============================================================================
+# Volumes
+# =============================================================================
 volumes:
   redis_data:
   npm_data:
