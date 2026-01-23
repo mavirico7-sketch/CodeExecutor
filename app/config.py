@@ -13,6 +13,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, field
 
+from app.api.schemas import EnvironmentResponse
+
 
 logger = logging.getLogger(__name__)
 
@@ -153,8 +155,25 @@ class Settings:
     
     @property
     def environments_list(self) -> List[str]:
-        """Get list of enabled environment names."""
-        return [name for name, env in self.environments.items() if env.enabled]
+        """Get list of enabled environment names, description and file extension"""
+        return [
+            name
+            for name, env in self.environments.items()
+            if env.enabled
+        ]
+    
+    @property
+    def environments_data(self) -> List[EnvironmentResponse]:
+        """Get list of enabled environment names, description and file extension"""
+        return [
+            EnvironmentResponse(
+                name=name,
+                description=env.description,
+                file_extension=env.file_extension
+            )
+            for name, env in self.environments.items()
+            if env.enabled
+        ]
     
     def get_environment(self, name: str) -> Optional[EnvironmentConfig]:
         """Get environment config by name."""

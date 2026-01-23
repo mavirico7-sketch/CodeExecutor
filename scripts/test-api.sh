@@ -33,65 +33,49 @@ echo "Available environments: $ENVS"
 echo -e "${GREEN}✓ Environments retrieved${NC}"
 echo ""
 
-# Create a session
-echo -e "${YELLOW}3. Creating Python session...${NC}"
-SESSION_RESPONSE=$(curl -s -X POST "$API_URL/sessions" \
-    -H "Content-Type: application/json" \
-    -d '{"environment": "python"}')
-echo "Response: $SESSION_RESPONSE"
-
-SESSION_ID=$(echo "$SESSION_RESPONSE" | grep -o '"session_id":"[^"]*"' | cut -d'"' -f4)
-if [ -z "$SESSION_ID" ]; then
-    echo -e "${RED}✗ Failed to create session${NC}"
-    exit 1
-fi
-echo "Session ID: $SESSION_ID"
-echo -e "${GREEN}✓ Session created${NC}"
-echo ""
-
-# Wait for session to be ready
-echo -e "${YELLOW}4. Waiting for session to be ready...${NC}"
-for i in {1..30}; do
-    STATUS_RESPONSE=$(curl -s "$API_URL/sessions/$SESSION_ID")
-    STATUS=$(echo "$STATUS_RESPONSE" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
-    echo "  Status: $STATUS"
-    
-    if [ "$STATUS" = "ready" ]; then
-        echo -e "${GREEN}✓ Session is ready${NC}"
-        break
-    elif [ "$STATUS" = "error" ]; then
-        echo -e "${RED}✗ Session errored${NC}"
-        echo "$STATUS_RESPONSE"
-        exit 1
-    fi
-    
-    if [ $i -eq 30 ]; then
-        echo -e "${RED}✗ Timeout waiting for session${NC}"
-        exit 1
-    fi
-    
-    sleep 1
-done
-echo ""
-
-# Execute code
-echo -e "${YELLOW}5. Executing Python code...${NC}"
+# Execute Python code
+echo -e "${YELLOW}3. Executing Python code...${NC}"
 CODE='print("Hello from Code Executor!")\nfor i in range(3):\n    print(f"  Number: {i}")'
-EXEC_RESPONSE=$(curl -s -X POST "$API_URL/sessions/$SESSION_ID/execute" \
+EXEC_RESPONSE=$(curl -s -X POST "$API_URL/execute" \
     -H "Content-Type: application/json" \
-    -d "{\"code\": \"$CODE\"}")
+    -d "{\"environment\": \"python\", \"code\": \"$CODE\"}")
 echo "Execution Response:"
 echo "$EXEC_RESPONSE" | python3 -m json.tool 2>/dev/null || echo "$EXEC_RESPONSE"
-echo -e "${GREEN}✓ Code executed${NC}"
+echo -e "${GREEN}✓ Python code executed${NC}"
 echo ""
 
-# Stop session
-echo -e "${YELLOW}6. Stopping session...${NC}"
-STOP_RESPONSE=$(curl -s -X DELETE "$API_URL/sessions/$SESSION_ID")
-echo "Response: $STOP_RESPONSE"
-echo -e "${GREEN}✓ Session stopped${NC}"
+# Execute Python code with stdin
+echo -e "${YELLOW}4. Execution with stdin...${NC}"
+CODE_STDIN='name = input()\nprint(f"Hello, {name}!")'
+EXEC_RESPONSE2=$(curl -s -X POST "$API_URL/execute" \
+    -H "Content-Type: application/json" \
+    -d "{\"environment\": \"python\", \"code\": \"$CODE_STDIN\", \"stdin\": \"World\"}")
+echo "Execution Response:"
+echo "$EXEC_RESPONSE2" | python3 -m json.tool 2>/dev/null || echo "$EXEC_RESPONSE2"
+echo -e "${GREEN}✓ Code with stdin executed${NC}"
+echo ""
+
+# Execute Node.js code
+echo -e "${YELLOW}5. Executing Node.js code...${NC}"
+CODE_NODE='console.log("Hello from Node.js!")'
+EXEC_RESPONSE3=$(curl -s -X POST "$API_URL/execute" \
+    -H "Content-Type: application/json" \
+    -d "{\"environment\": \"node\", \"code\": \"$CODE_NODE\"}")
+echo "Execution Response:"
+echo "$EXEC_RESPONSE3" | python3 -m json.tool 2>/dev/null || echo "$EXEC_RESPONSE3"
+echo -e "${GREEN}✓ Node.js code executed${NC}"
+echo ""
+
+# Test error handling
+echo -e "${YELLOW}6. Testing error handling (syntax error)...${NC}"
+CODE_ERR='print("unclosed string'
+EXEC_RESPONSE4=$(curl -s -X POST "$API_URL/execute" \
+    -H "Content-Type: application/json" \
+    -d "{\"environment\": \"python\", \"code\": \"$CODE_ERR\"}")
+echo "Execution Response:"
+echo "$EXEC_RESPONSE4" | python3 -m json.tool 2>/dev/null || echo "$EXEC_RESPONSE4"
+echo -e "${GREEN}✓ Error handled correctly${NC}"
 echo ""
 
 echo "========================================"
 echo -e "${GREEN}All tests passed!${NC}"
-

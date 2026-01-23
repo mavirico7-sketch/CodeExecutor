@@ -7,6 +7,7 @@ environment definitions (images, commands, etc.)
 
 import docker
 import time
+import uuid
 from typing import Dict, Any, Optional
 from docker.errors import DockerException, NotFound, APIError
 
@@ -41,14 +42,17 @@ class DockerExecutor:
             return env_config.default_filename
         return "main.py"
 
-    def create_container(self, session_id: str, environment: str) -> str:
-        """Create a new container for the session."""
+    def create_container(self, session_id: Optional[str], environment: str) -> str:
+        """Create a new container for code execution."""
         image_name = self.get_image_name(environment)
+        
+        # Generate unique container name
+        container_name = f"exec-{uuid.uuid4().hex[:12]}"
 
         try:
             container = self.client.containers.create(
                 image=image_name,
-                name=f"session-{session_id[:8]}",
+                name=container_name,
                 command=["sleep", "infinity"],
                 detach=True,
                 mem_limit=settings.container_memory_limit,
@@ -62,7 +66,6 @@ class DockerExecutor:
                 user=settings.executor_user,
                 labels={
                     "code-executor": "true",
-                    "session_id": session_id,
                     "environment": environment,
                 },
                 tmpfs={"/tmp": f"size={settings.tmpfs_size},noexec,nosuid,nodev"},
@@ -170,7 +173,7 @@ class DockerExecutor:
         except NotFound:
             return {
                 "stdout": "",
-                "stderr": "Container not found. Session may have expired.",
+                "stderr": "Container not found.",
                 "exit_code": -1,
                 "execution_time": 0,
             }
@@ -205,10 +208,11 @@ class DockerExecutor:
             return False
 
     def cleanup_orphaned_containers(self) -> list:
-        """Remove containers that are no longer associated with active sessions."""
+        """Remove all code-executor containers."""
         cleaned = []
         try:
             containers = self.client.containers.list(
+                all=True,
                 filters={"label": "code-executor=true"}
             )
             for container in containers:
@@ -221,37 +225,6 @@ class DockerExecutor:
         except Exception as e:
             print(f"Error during cleanup: {e}")
         return cleaned
-
-    def get_container_stats(self, container_id: str) -> Optional[Dict[str, Any]]:
-        """Get container resource usage stats."""
-        try:
-            container = self.client.containers.get(container_id)
-            stats = container.stats(stream=False)
-            return {
-                "memory_usage": stats["memory_stats"].get("usage", 0),
-                "memory_limit": stats["memory_stats"].get("limit", 0),
-                "cpu_percent": self._calculate_cpu_percent(stats),
-            }
-        except Exception:
-            return None
-
-    def _calculate_cpu_percent(self, stats: dict) -> float:
-        """Calculate CPU usage percentage from stats."""
-        try:
-            cpu_delta = (
-                stats["cpu_stats"]["cpu_usage"]["total_usage"]
-                - stats["precpu_stats"]["cpu_usage"]["total_usage"]
-            )
-            system_delta = (
-                stats["cpu_stats"]["system_cpu_usage"]
-                - stats["precpu_stats"]["system_cpu_usage"]
-            )
-            if system_delta > 0:
-                cpu_count = len(stats["cpu_stats"]["cpu_usage"].get("percpu_usage", [1]))
-                return (cpu_delta / system_delta) * cpu_count * 100.0
-        except (KeyError, ZeroDivisionError):
-            pass
-        return 0.0
 
 
 # Lazy singleton - won't connect to Docker until first use

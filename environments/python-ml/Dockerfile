@@ -1,32 +1,31 @@
-# Python ML Environment
+# Используем минимальный образ Python
 FROM python:3.11-slim
 
-# Install system dependencies for ML libraries
+# Установка системных зависимостей (нужны для сборки некоторых ML пакетов)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user
+# Создание пользователя
 RUN groupadd -r executor && useradd -r -g executor executor
 
-# Install ML packages
-RUN pip install --no-cache-dir \
-    numpy==1.26.3 \
+# Установка ML библиотек
+# Используем --extra-index-url ВМЕСТО --index-url.
+# Это позволяет pip искать torch в репозитории PyTorch, 
+# а остальные пакеты (numpy, pandas и т.д.) в стандартном PyPI.
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir \
+    numpy==1.26.4 \
     pandas==2.2.0 \
     scikit-learn==1.4.0 \
-    matplotlib==3.8.2 \
     requests==2.31.0 \
-    pytest==8.0.0
+    pytest==8.0.0 \
+    torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu
 
-# Create workspace directory
+# Настройка рабочей директории
 RUN mkdir -p /workspace && chown executor:executor /workspace
-
-# Set working directory
 WORKDIR /workspace
 
-# Switch to non-root user
 USER executor
 
-# Default command (will be overridden)
-CMD ["sleep", "infinity"]
-
+CMD ["python3"]

@@ -26,9 +26,8 @@ celery_app.conf.update(
 )
 
 celery_app.conf.beat_schedule = {
-    "cleanup-expired-sessions": {
-        "task": "app.worker.tasks.cleanup_expired_sessions",
+    "cleanup-orphaned-containers": {
+        "task": "app.worker.tasks.cleanup_orphaned_containers",
         "schedule": 300.0,  # every 5 minutes
     },
 }
-

@@ -1,33 +1,13 @@
 from pydantic import BaseModel, Field
 from typing import Optional
-from enum import Enum
 
 
-class SessionStatus(str, Enum):
-    PENDING = "pending"
-    CREATING = "creating"
-    READY = "ready"
-    EXECUTING = "executing"
-    STOPPING = "stopping"
-    STOPPED = "stopped"
-    ERROR = "error"
-
-
-class CreateSessionRequest(BaseModel):
+class ExecuteRequest(BaseModel):
+    """Request to execute code"""
     environment: str = Field(
         ...,
         description="Execution environment (e.g., 'python', 'python-ml', 'node', 'rust')"
     )
-
-
-class CreateSessionResponse(BaseModel):
-    session_id: str
-    status: SessionStatus
-    environment: str
-    message: str
-
-
-class ExecuteCodeRequest(BaseModel):
     code: str = Field(..., description="Source code to execute")
     stdin: Optional[str] = Field(
         None,
@@ -39,8 +19,9 @@ class ExecuteCodeRequest(BaseModel):
     )
 
 
-class ExecuteCodeResponse(BaseModel):
-    session_id: str
+class ExecuteResponse(BaseModel):
+    """Response from code execution"""
+    environment: str
     stdout: str
     stderr: str
     exit_code: int
@@ -48,22 +29,12 @@ class ExecuteCodeResponse(BaseModel):
     status: str
 
 
-class SessionStatusResponse(BaseModel):
-    session_id: str
-    status: SessionStatus
-    environment: str
-    container_id: Optional[str] = None
-    created_at: Optional[str] = None
-    last_execution: Optional[str] = None
-
-
-class StopSessionResponse(BaseModel):
-    session_id: str
-    status: SessionStatus
-    message: str
-
-
 class ErrorResponse(BaseModel):
     detail: str
     error_code: Optional[str] = None
 
+
+class EnvironmentResponse(BaseModel):
+    name: str
+    description: str
+    file_extension: str

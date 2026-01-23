@@ -6,40 +6,12 @@
 #   - ./config/environments.yaml (execution environments, copied in Dockerfile)
 #
 # Access points:
-#   - API: http://localhost:8000 (direct) or via Nginx Proxy Manager
-#   - Nginx Proxy Manager Admin: http://localhost:81
-#     Default login: admin@example.com / changeme
+#   - API: http://localhost:8000 (direct) or via reverse proxy
 #
-# Network: all services are connected to 'app-network'
+# Network: all services are connected to external 'app-network'
 # =============================================================================
 
 services:
-  # ---------------------------------------------------------------------------
-  # Nginx Proxy Manager - Reverse proxy with web UI
-  # ---------------------------------------------------------------------------
-  nginx-proxy-manager:
-    image: jc21/nginx-proxy-manager:latest
-    container_name: code-executor-npm
-    ports:
-      # Public HTTP port
-      - "80:80"
-      # Public HTTPS port
-      - "443:443"
-      # Admin Web UI
-      - "81:81"
-    volumes:
-      - npm_data:/data
-      - npm_letsencrypt:/etc/letsencrypt
-    networks:
-      - app-network
-    depends_on:
-      - api
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "/bin/check-health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   # ---------------------------------------------------------------------------
   # Redis - Message broker and state storage
@@ -73,8 +45,8 @@ services:
     container_name: code-executor-api
     # API доступен напрямую на порту 8000 или через Nginx Proxy Manager
     # Для production рекомендуется убрать прямой доступ и использовать только NPM
-    #ports:
-    #  - "8000:8000"
+    ports:
+     - "8000:8000"
     env_file:
       - ./code-executor.conf
     networks:
@@ -132,13 +104,11 @@ services:
 # =============================================================================
 networks:
   app-network:
+    external: true
     name: app-network
-    driver: bridge
 
 # =============================================================================
 # Volumes
 # =============================================================================
 volumes:
   redis_data:
-  npm_data:
-  npm_letsencrypt:
