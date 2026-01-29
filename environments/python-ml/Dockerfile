@@ -15,11 +15,12 @@ RUN groupadd -r executor && useradd -r -g executor executor
 # а остальные пакеты (numpy, pandas и т.д.) в стандартном PyPI.
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir \
-    numpy==1.26.4 \
-    pandas==2.2.0 \
-    scikit-learn==1.4.0 \
-    requests==2.31.0 \
-    pytest==8.0.0 \
+    numpy \
+    pandas \
+    scikit-learn \
+    requests \
+    pytest \
+    "fastapi[standard]" \
     torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu
 
 # Настройка рабочей директории
